@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jira Time Tracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .progress { height: 25px; border-radius: 12px; position: relative; }
+        .progress-bar { line-height: 25px; font-weight: bold; transition: width 0.6s ease; }
+        .day-row { cursor: pointer; transition: background-color 0.2s; }
+        .day-row:hover { background-color: #f1f3f5; }
+        .worklog-details { display: none; background-color: #f8f9fa; }
+        /* Ensure text is visible for low percentages */
+        .progress-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            z-index: 2;
+            color: black; /* Default color for text when bar is small or empty */
+        }
+        /* When bar is large enough, we can use the bar's text color, but the absolute positioning makes it tricky.
+           Let's stick to the user request: distinct from background. */
+        
+        .progress-bar.text-white { color: white; }
+        .progress-bar.text-dark { color: black; }
+        
+    </style>
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4 shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#">📅 Jira Time Tracker</a>
+            <div class="d-flex">
+                <button type="button" class="btn btn-light btn-sm me-2 d-flex align-items-center justify-content-center fw-bold" data-bs-toggle="modal" data-bs-target="#addWorklogModal">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="black" class="me-1" viewBox="0 0 16 16" style="stroke: black; stroke-width: 0.5px;">
+                        <path d="M8.5 3v4.5H13v1H8.5V13h-1V8.5H3v-1h4.5V3h1z"/>
+                    </svg>
+                    <span>Log work</span>
+                </button>
+                <a href="{{ url_for('config') }}" class="btn btn-outline-light btn-sm d-flex align-items-center justify-content-center" style="width: 31px; padding: 0;" title="Configuration">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/>
+                        <path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Add Worklog Modal -->
+    <div class="modal fade" id="addWorklogModal" tabindex="-1" aria-labelledby="addWorklogModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form action="{{ url_for('add_worklog') }}" method="POST">
+                    <input type="hidden" name="start_date" value="{{ start_date }}">
+                    <input type="hidden" name="end_date" value="{{ end_date }}">
+                    
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="addWorklogModalLabel">Add Work Log</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="issue_id" class="form-label fw-bold">Issue ID</label>
+                                <input type="text" class="form-control" id="issue_id" name="issue_id" required placeholder="e.g. PROJECT-123">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="comment" class="form-label fw-bold">Comment (Optional)</label>
+                                <input type="text" class="form-control" id="comment" name="comment" placeholder="What did you work on?">
+                            </div>
+                        </div>
+                        
+                        <h6 class="mt-4 mb-3 border-bottom pb-2">Log Works Days</h6>
+                        <div id="worklog-entries">
+                            <div class="row mb-2 worklog-entry align-items-end" id="new-log-form">
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-1">Date</label>
+                                    <input type="date" class="form-control" id="new_log_date">
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label text-muted small mb-1">Time Spent (e.g. 1d 2h 30m)</label>
+                                    <input type="text" class="form-control" id="new_log_time" placeholder="1h 30m">
+                                </div>
+                                <div class="col-md-1 text-center">
+                                    <button type="button" class="btn btn-outline-primary p-0 d-flex align-items-center justify-content-center mx-auto" id="add-worklog-entry" style="width: 38px; height: 38px;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16" style="stroke: currentColor; stroke-width: 0.5px;">
+                                            <path d="M8.5 2v5.5H14v1H8.5V14h-1V8.5H2v-1h5.5V2h1z"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary" id="save-worklogs-btn">
+                            <span class="spinner-border spinner-border-sm d-none me-1" id="save-worklogs-spinner" role="status" aria-hidden="true"></span>
+                            <span id="save-worklogs-text">Save Work Logs</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="container pb-5">
+        {% if error %}
+        <div class="alert alert-danger shadow-sm">{{ error }}</div>
+        {% endif %}
+
+        <div class="card shadow border-0 mb-4">
+            <div class="card-body">
+                <form method="get" class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label for="start_date" class="form-label fw-bold">Start Date</label>
+                        <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date }}" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="end_date" class="form-label fw-bold">End Date</label>
+                        <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date }}" required>
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-primary w-100">Filter</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if not time_data and not error %}
+        <div class="alert alert-info shadow-sm">
+            No worklogs found for the selected period.
+        </div>
+        {% endif %}
+
+        {% if time_data %}
+        <div class="card shadow border-0">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 text-primary">Time Spent by Day (Target: 8h)</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 150px;" class="ps-4">Date</th>
+                                <th style="width: 120px;">Day</th>
+                                <th style="width: 120px;">Total Hours</th>
+                                <th class="pe-4">Daily Progress</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for date, data in time_data.items() %}
+                            <tr class="day-row" onclick="toggleDetails('{{ loop.index }}')">
+                                <td class="fw-bold ps-4 text-secondary">{{ date }}</td>
+                                <td class="fw-bold text-secondary">{{ data['day_name'] }}</td>
+                                <td>
+                                    <span class="badge bg-secondary fs-6">{{ "%.2f"|format(data['hours']) }} h</span>
+                                </td>
+                                <td class="pe-4">
+                                    <div class="progress shadow-sm bg-white border">
+                                        {% set percentage = (data['hours'] / 8 * 100) %}
+                                        {# Capping visual width at 100% but showing real percentage text #}
+                                        {% set width = percentage if percentage <= 100 else 100 %}
+                                        
+                                        {% set color_class = 'bg-success' %}
+                                        {% set text_color = 'text-white' %}
+                                        
+                                        {% if percentage > 100 %}
+                                            {% set color_class = 'bg-warning' %}
+                                            {% set text_color = 'text-dark' %}
+                                        {% elif percentage == 0 %}
+                                            {% set color_class = 'bg-light' %}
+                                            {% set text_color = 'text-muted' %}
+                                        {% elif percentage < 50 %}
+                                            {% set color_class = 'bg-danger' %}
+                                            {% set text_color = 'text-white' %}
+                                        {% elif percentage < 90 %}
+                                            {% set color_class = 'bg-info' %}
+                                            {% set text_color = 'text-dark' %}
+                                        {% endif %}
+                                        
+                                        <div class="progress-bar {{ color_class }} {{ text_color }}" role="progressbar" 
+                                             style="width: {{ width }}%; min-width: 2em;" 
+                                             aria-valuenow="{{ percentage }}" aria-valuemin="0" aria-valuemax="100">
+                                            {{ "%.0f"|format(percentage) }}%
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr id="details-{{ loop.index }}" class="worklog-details">
+                                <td colspan="4" class="p-0">
+                                    <div class="p-4 border-bottom">
+                                        <h6 class="text-muted mb-3">Worklog Details:</h6>
+                                        {% if data['logs'] %}
+                                        <ul class="list-group shadow-sm">
+                                            {% for log in data['logs'] %}
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <a href="{{ log.url }}" target="_blank" class="badge bg-primary me-2 text-decoration-none" title="Open in Jira">
+                                                        {{ log.key }} ↗
+                                                    </a>
+                                                    <span class="text-dark">{{ log.summary }}</span>
+                                                    {% if log.comment and log.comment != 'Complex comment' %}
+                                                    <br><small class="text-muted ms-1">📝 {{ log.comment }}</small>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="d-flex align-items-center">
+                                                    <span class="fw-bold text-nowrap ms-3 me-3">{{ "%.2f"|format(log.time_spent_hours) }} h</span>
+                                                    <form method="POST" action="{{ url_for('delete_worklog') }}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this worklog?');">
+                                                        <input type="hidden" name="issue_id" value="{{ log.key }}">
+                                                        <input type="hidden" name="worklog_id" value="{{ log.id }}">
+                                                        <input type="hidden" name="start_date" value="{{ start_date }}">
+                                                        <input type="hidden" name="end_date" value="{{ end_date }}">
+                                                        <button type="submit" class="btn btn-outline-danger p-0 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" title="Delete worklog">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                                              <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6Z"/>
+                                                              <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1ZM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118ZM2.5 3V2h11v1h-11Z"/>
+                                                            </svg>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </li>
+                                            {% endfor %}
+                                        </ul>
+                                        {% else %}
+                                        <div class="text-muted fst-italic">No work logged for this day.</div>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.getElementById('worklog-entries');
+            const addButton = document.getElementById('add-worklog-entry');
+            
+            if (addButton && container) {
+                addButton.addEventListener('click', function() {
+                    const dateInput = document.getElementById('new_log_date');
+                    const timeInput = document.getElementById('new_log_time');
+                    const dateVal = dateInput.value;
+                    const timeVal = timeInput.value;
+                    
+                    if (!dateVal || !timeVal) {
+                        alert('Please provide both Date and Time Spent to add a log.');
+                        return;
+                    }
+
+                    const row = document.createElement('div');
+                    row.className = 'row mb-2 worklog-entry align-items-end mt-2';
+                    row.innerHTML = `
+                        <div class="col-md-6">
+                            <input type="date" class="form-control" name="log_date[]" value="${dateVal}" required readonly>
+                        </div>
+                        <div class="col-md-5">
+                            <input type="text" class="form-control" name="log_time[]" value="${timeVal}" required readonly>
+                        </div>
+                        <div class="col-md-1 text-center">
+                            <button type="button" class="btn btn-outline-danger p-0 d-flex align-items-center justify-content-center mx-auto remove-entry" style="width: 38px; height: 38px;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="pointer-events: none;">
+                                  <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6Z"/>
+                                  <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1ZM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118ZM2.5 3V2h11v1h-11Z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    `;
+                    container.appendChild(row);
+                    
+                    // Clear the form fields for next entry
+                    dateInput.value = '';
+                    timeInput.value = '';
+                });
+
+                container.addEventListener('click', function(e) {
+                    if (e.target.closest('.remove-entry')) {
+                        const entry = e.target.closest('.worklog-entry');
+                        if (entry) {
+                            entry.remove();
+                        }
+                    }
+                });
+            }
+            
+            const worklogForm = document.querySelector('#addWorklogModal form');
+            if (worklogForm) {
+                worklogForm.addEventListener('submit', function() {
+                    const saveBtn = document.getElementById('save-worklogs-btn');
+                    const spinner = document.getElementById('save-worklogs-spinner');
+                    const btnText = document.getElementById('save-worklogs-text');
+                    
+                    if (saveBtn && spinner && btnText) {
+                        saveBtn.disabled = true;
+                        spinner.classList.remove('d-none');
+                        btnText.textContent = 'Saving...';
+                    }
+                });
+            }
+        });
+
+        function toggleDetails(index) {
+            const row = document.getElementById('details-' + index);
+            if (row.style.display === 'table-row') {
+                row.style.display = 'none';
+            } else {
+                row.style.display = 'table-row';
+            }
+        }
+    </script>
+</body>
+</html>

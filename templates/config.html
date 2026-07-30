@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Configuration</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>body { background-color: #f0f2f5; display: flex; align-items: center; justify-content: center; height: 100vh; }</style>
+</head>
+<body>
+    <div class="card shadow-lg" style="width: 100%; max-width: 500px;">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">⚙️ Jira Configuration</h5>
+        </div>
+        <div class="card-body p-4">
+            <form method="post">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Jira URL</label>
+                    <input type="url" name="jira_url" class="form-control" placeholder="https://your-domain.atlassian.net" required value="{{ config.get('JIRA_URL') or '' }}">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Email</label>
+                    <input type="email" name="jira_email" class="form-control" placeholder="user@example.com" required value="{{ config.get('JIRA_EMAIL') or '' }}">
+                </div>
+                <div class="mb-4">
+                    <label class="form-label fw-bold">API Token</label>
+                    <input type="password" name="jira_api_token" class="form-control" placeholder="••••••••••••••••" required value="{{ config.get('JIRA_API_TOKEN') or '' }}">
+                    <div class="form-text">
+                        Create one at <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank">Atlassian Security</a>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 py-2">Save & Connect</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
