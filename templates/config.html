@@ -1,35 +1,159 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR" data-theme="light">
 <head>
-    <title>Configuration</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>body { background-color: #f0f2f5; display: flex; align-items: center; justify-content: center; height: 100vh; }</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Configuração — Jira Time Tracker</title>
+<link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/svg+xml">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v={{ asset_v }}">
+<script>
+  (function () {
+    try {
+      var saved = localStorage.getItem('jtt-theme');
+      var dark = saved ? saved === 'dark'
+                       : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    } catch (e) {}
+  })();
+</script>
 </head>
 <body>
-    <div class="card shadow-lg" style="width: 100%; max-width: 500px;">
-        <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">⚙️ Jira Configuration</h5>
-        </div>
-        <div class="card-body p-4">
-            <form method="post">
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Jira URL</label>
-                    <input type="url" name="jira_url" class="form-control" placeholder="https://your-domain.atlassian.net" required value="{{ config.get('JIRA_URL') or '' }}">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Email</label>
-                    <input type="email" name="jira_email" class="form-control" placeholder="user@example.com" required value="{{ config.get('JIRA_EMAIL') or '' }}">
-                </div>
-                <div class="mb-4">
-                    <label class="form-label fw-bold">API Token</label>
-                    <input type="password" name="jira_api_token" class="form-control" placeholder="••••••••••••••••" required value="{{ config.get('JIRA_API_TOKEN') or '' }}">
-                    <div class="form-text">
-                        Create one at <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank">Atlassian Security</a>
-                    </div>
-                </div>
-                <button type="submit" class="btn btn-primary w-100 py-2">Save & Connect</button>
-            </form>
-        </div>
+
+<main class="centered">
+  <div class="card config-card">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+      <span class="brand__mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3.2 1.9"></path>
+        </svg>
+      </span>
+      <div>
+        <h1>Configuração</h1>
+        <div class="muted">Jira Time Tracker</div>
+      </div>
     </div>
+
+    <div id="config-banner"></div>
+
+    <div class="banner banner--info">
+      <span>
+        <strong>Modo Tempo:</strong> preencha o token do Tempo.
+        <strong>Jira nativo:</strong> deixe o token do Tempo em branco.
+        As credenciais vão para o Windows Credential Manager, nunca para a pasta do projeto.
+      </span>
+    </div>
+
+    <form id="config-form" novalidate>
+      <div class="field">
+        <label for="jira_url">URL do Jira</label>
+        <input type="url" id="jira_url" required placeholder="https://empresa.atlassian.net"
+               value="{{ config.JIRA_URL }}">
+      </div>
+
+      <div class="field">
+        <label for="jira_email">E-mail do Jira</label>
+        <input type="email" id="jira_email" required placeholder="voce@empresa.com.br"
+               value="{{ config.JIRA_EMAIL }}">
+      </div>
+
+      <div class="field">
+        <label for="jira_api_token">Token da API Atlassian</label>
+        <input type="password" id="jira_api_token" autocomplete="off"
+               placeholder="{% if config.has_jira_token %}•••••••• já salvo — deixe em branco para manter{% else %}cole o token aqui{% endif %}">
+        <div class="field__hint">
+          Gere em
+          <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" rel="noopener">
+            id.atlassian.com</a> com <strong>Create API token</strong> (sem escopos).
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="tempo_api_token">Token da API Tempo <span class="faint">(opcional)</span></label>
+        <input type="password" id="tempo_api_token" autocomplete="off"
+               placeholder="{% if config.has_tempo_token %}•••••••• já salvo — deixe em branco para manter{% else %}vazio = usar worklogs nativos do Jira{% endif %}">
+        {% if config.has_tempo_token %}
+        <label class="field__hint" style="display:flex;gap:8px;align-items:center;cursor:pointer">
+          <input type="checkbox" id="clear_tempo" style="width:auto">
+          Remover o token do Tempo e voltar ao modo Jira nativo
+        </label>
+        {% else %}
+        <div class="field__hint">Jira &gt; Apps &gt; Tempo &gt; Settings &gt; API Integration. Escopo Worklogs: View + Manage.</div>
+        {% endif %}
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center">
+        <button type="submit" class="btn btn--primary" id="config-save" style="flex:1">
+          <span class="btn__label">Salvar e testar</span>
+        </button>
+        <a class="btn" href="/"><span class="btn__label">Voltar</span></a>
+      </div>
+    </form>
+
+    <hr class="divider">
+
+    <div class="section-title"><h2>Preferências da tela</h2></div>
+    <div id="prefs-banner"></div>
+
+    <form id="prefs-form" novalidate>
+      <div class="field">
+        <label for="week_start">A semana começa em</label>
+        <select id="week_start">
+          <option value="monday" {% if prefs.week_start == 'monday' %}selected{% endif %}>Segunda-feira</option>
+          <option value="sunday" {% if prefs.week_start == 'sunday' %}selected{% endif %}>Domingo</option>
+        </select>
+        <div class="field__hint">Vale para os filtros <strong>Esta semana</strong> e <strong>Semana passada</strong>.</div>
+      </div>
+
+      <div class="field">
+        <label for="month_cycle_start">Dia de início do mês de fechamento</label>
+        <input type="number" id="month_cycle_start" min="1" max="28" step="1"
+               value="{{ prefs.month_cycle_start }}">
+        <div class="field__hint">
+          O filtro de mês segue o fechamento da empresa, não o calendário:
+          dia <strong id="cycle-preview">{{ prefs.month_cycle_start }}</strong> de um mês até o dia
+          anterior a ele no mês seguinte.
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="target_hours">Horas esperadas por dia útil</label>
+        <input type="number" id="target_hours" min="1" max="24" step="0.5"
+               value="{{ prefs.target_hours }}">
+        <div class="field__hint">Usado no saldo do período e na barra de cada dia.</div>
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center">
+        <button type="submit" class="btn btn--primary" id="prefs-save" style="flex:1">
+          <span class="btn__label">Salvar preferências</span>
+        </button>
+      </div>
+    </form>
+
+    <hr class="divider">
+
+    <div class="section-title">
+      <h2>Feriados</h2>
+    </div>
+    <p class="field__hint">
+      O dia aparece na lista com o nome do feriado, e só. Lançar continua
+      permitido — tem time que lança num card do Jira e tem time que deixa o
+      dia em branco. Em branco, o dia não é cobrado nas horas esperadas; com
+      horas lançadas, conta como qualquer dia útil.
+    </p>
+    <p class="field__hint">
+      Os feriados saem de <code>feriados.json</code>, na pasta do programa, em
+      listas separadas: <code>nacionais</code>, <code>estaduais</code>,
+      <code>municipais</code>, <code>facultativos</code> (Carnaval e Corpus
+      Christi) e <code>extras</code>. É um arquivo comum — tirar uma linha de
+      lá apaga o aviso daquele dia.
+    </p>
+  </div>
+</main>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script src="{{ url_for('static', filename='js/config.js') }}?v={{ asset_v }}" defer></script>
 </body>
 </html>

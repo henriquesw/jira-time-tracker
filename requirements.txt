@@ -1,3 +1,6 @@
-flask
+flask>=2.2
 requests
 python-dotenv
+keyring
+pystray
+pillow

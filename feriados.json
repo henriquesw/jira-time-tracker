@@ -1,0 +1,48 @@
+{
+    "_leia": [
+        "Dias que a tela marca como feriado. É só um aviso: lançar horas neles",
+        "continua permitido, e cada time decide se lança ou deixa em branco.",
+        "",
+        "A única consequência é na soma do período: feriado em branco não é",
+        "cobrado; feriado com horas lançadas conta como qualquer dia útil.",
+        "",
+        "As listas são separadas por origem. Mexa só na que interessa — quem",
+        "não é de São Paulo, por exemplo, esvazia 'estaduais' e 'municipais'",
+        "sem tocar nos nacionais. 'facultativos' é o que oficialmente é ponto",
+        "facultativo, não feriado.",
+        "",
+        "Cada item aceita uma destas formas de data:",
+        "   \"dia\": \"12-25\"         todo ano nesse dia (MM-DD)",
+        "   \"pascoa\": -2           dias a contar do Domingo de Páscoa",
+        "   \"data\": \"2026-12-24\"   uma data só, naquele ano (para 'extras')"
+    ],
+
+    "nacionais": [
+        { "dia": "01-01", "nome": "Confraternização Universal" },
+        { "pascoa": -2, "nome": "Sexta-feira Santa" },
+        { "dia": "04-21", "nome": "Tiradentes" },
+        { "dia": "05-01", "nome": "Dia do Trabalho" },
+        { "dia": "09-07", "nome": "Independência do Brasil" },
+        { "dia": "10-12", "nome": "Nossa Senhora Aparecida" },
+        { "dia": "11-02", "nome": "Finados" },
+        { "dia": "11-15", "nome": "Proclamação da República" },
+        { "dia": "11-20", "nome": "Consciência Negra" },
+        { "dia": "12-25", "nome": "Natal" }
+    ],
+
+    "estaduais": [
+        { "dia": "07-09", "nome": "Revolução Constitucionalista", "uf": "SP" }
+    ],
+
+    "municipais": [
+        { "dia": "01-25", "nome": "Aniversário de São Paulo", "cidade": "São Paulo", "uf": "SP" }
+    ],
+
+    "facultativos": [
+        { "pascoa": -48, "nome": "Carnaval (segunda)" },
+        { "pascoa": -47, "nome": "Carnaval" },
+        { "pascoa": 60, "nome": "Corpus Christi" }
+    ],
+
+    "extras": []
+}
